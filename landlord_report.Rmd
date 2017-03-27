@@ -1,0 +1,62 @@
+---
+title: Landlords technical reports
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+First lets set up our libraries and import our data with our processing pipeline:
+
+```{r, "imports", message = FALSE}
+source("init.R")
+```
+
+```{r, "import data"}
+llr_joined = import_llr() %>% process_llr() %>% join_llr()
+```
+First we import the data, process it, then join it. The final function adds a new, joined, dataset called ct_merged to our list of dataframes.
+
+ct_merged is the join of three datasets. ``Housing Benefit``, ``Council Tax`` and ``Landlord's register``.
+
+**investigating the datasets**
+
+Firstly I'm going to clone the ct_merged data frame into its own variable for ease of use:
+```{r clone_merged}
+ct_merged = llr_joined$ct_merged
+
+```
+
+The joined dataset uses council tax as its baseline (its the largest of the lot), but horizontally the landlords register and housing benefits. part of the ``process_llr()`` script prepends the column names with a label to make it easier to identify them later.
+
+```{r ct_colnames}
+colnames(ct_merged)
+```
+
+**Unmatched records** 
+
+We've merged the three datasets here using a *UPRN* - Unique Property Reference Number - which is the defacto way to identify physical properties in the UK. We don't have UPRN's for all CT, HB and LLR records, so not all get joined. 
+
+The numbers below are the percentages of records we DON'T have UPRN's for. 
+
+```{r uprn_coverage}
+### Landlords registrations that we can't link to CTAX / Benefits via UPRN - 6,510 / 55,753 = 11.7%
+round(llr_joined$llr %>% filter(!(uid_full %in% llr_joined$ct_merged$llr_uid)) %>% nrow() / nrow(llr_joined$llr), 2) 
+
+### Ctax records that we don't have a uprn for - 3499 / 307,422 = 1.1%
+round(llr_joined$ct %>% filter(!(property_ref %in% llr_joined$finref_uprn$FIN_REF)) %>% nrow() / nrow(llr_joined$ct),2)
+
+### Benefits records that we don't have a uprn for - 1,218 / 98,359 = 1.2%
+round(llr_joined$benefits %>% filter(!(property_ref %in% llr_joined$finref_uprn$FIN_REF)) %>% nrow() / nrow(llr_joined$benefits),2)
+```
+
+Pretty good coverage for council tax and housing benefit - but not so much with the LLR. We'll see later the impact this has on our overall assumptions and results.
+
+**Estimating tenure from council tax and housing benefit**
+
+We established a number of rules to estimate tenure  
+```{r tenure_estimate}
+
+
+```
